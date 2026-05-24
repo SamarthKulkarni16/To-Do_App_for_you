@@ -65,46 +65,6 @@ class TodoWidget : GlanceAppWidget() {
                 .background(androidx.compose.ui.graphics.Color.Black)
                 .padding(12.dp)
         ) {
-            // Widget Header
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "TODO",
-                    style = TextStyle(
-                        color = ColorProvider(androidx.compose.ui.graphics.Color.White),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = GlanceModifier.defaultWeight()
-                )
-
-                // Minimalist "+" button that launches QuickAddActivity
-                Text(
-                    text = "+",
-                    style = TextStyle(
-                        color = ColorProvider(androidx.compose.ui.graphics.Color.White),
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    modifier = GlanceModifier
-                        .clickable(actionStartActivity(android.content.Intent(context, QuickAddActivity::class.java)))
-                        .padding(horizontal = 8.dp)
-                )
-            }
-
-            // Separator white line
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(androidx.compose.ui.graphics.Color.White)
-                    .padding(bottom = 8.dp)
-            ) {}
-
-            Spacer(modifier = GlanceModifier.height(4.dp))
-
             // Task List
             if (filteredTasks.isEmpty()) {
                 Box(
@@ -123,7 +83,7 @@ class TodoWidget : GlanceAppWidget() {
                 Column(
                     modifier = GlanceModifier.fillMaxSize()
                 ) {
-                    val displayList = filteredTasks.take(4) // Show up to 4 items in standard widget size
+                    val displayList = filteredTasks.take(8) // Show up to 8 items in standard widget size
                     displayList.forEach { task ->
                         val anim = animatingTasks[task.id]
                         TaskRow(task = task, anim = anim)
@@ -194,55 +154,7 @@ class CompleteTaskAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val taskId = parameters[TodoWidget.taskIdKey] ?: return
 
-        // Stage 1 (Strike-through) starts: 2.0s duration
-        val steps = 10
-        WidgetAnimationState.animatingTasks.value = WidgetAnimationState.animatingTasks.value + (taskId to WidgetTaskAnim(
-            taskId = taskId,
-            progress = 0.0f,
-            stage = 1,
-            glimpseFade = 1.0f,
-            glimpseScale = 1.0f
-        ))
-        
-        TodoWidget().update(context, glanceId)
-
-        for (i in 1..steps) {
-            kotlinx.coroutines.delay(200) // 200ms * 10 = 2000ms (Exactly 2.0s!)
-            val progressVal = i.toFloat() / steps
-            WidgetAnimationState.animatingTasks.value = WidgetAnimationState.animatingTasks.value.toMutableMap().apply {
-                if (containsKey(taskId)) {
-                    this[taskId] = this[taskId]!!.copy(progress = progressVal)
-                }
-            }
-            TodoWidget().update(context, glanceId)
-        }
-
-        // Stage 2: rapid scale downward (Z-Axis Fading) & alpha fade - 300ms total
-        WidgetAnimationState.animatingTasks.value = WidgetAnimationState.animatingTasks.value.toMutableMap().apply {
-            if (containsKey(taskId)) {
-                this[taskId] = this[taskId]!!.copy(stage = 2, progress = 1.0f)
-            }
-        }
-        TodoWidget().update(context, glanceId)
-
-        val stage2Steps = 3
-        for (i in 1..stage2Steps) {
-            kotlinx.coroutines.delay(100) // 100ms * 3 = 300ms
-            val progressPct = i.toFloat() / stage2Steps
-            val alphaVal = 1.0f - progressPct
-            val scaleVal = 1.0f - progressPct
-            WidgetAnimationState.animatingTasks.value = WidgetAnimationState.animatingTasks.value.toMutableMap().apply {
-                if (containsKey(taskId)) {
-                    this[taskId] = this[taskId]!!.copy(
-                        glimpseFade = alphaVal.coerceIn(0f, 1f),
-                        glimpseScale = scaleVal.coerceIn(0.01f, 1f)
-                    )
-                }
-            }
-            TodoWidget().update(context, glanceId)
-        }
-
-        // Stage 3 (The Shift): Save task completed in Room, remove animation state, refresh layout
+        // Save task completed in Room, cancel notification, and refresh widget layout immediately
         val db = AppDatabase.getDatabase(context)
         val task = db.taskDao().getTaskById(taskId)
         if (task != null) {
@@ -255,7 +167,10 @@ class CompleteTaskAction : ActionCallback {
             TaskDeadlineScheduler.cancelDeadlineNotification(context, taskId)
         }
 
+        // Clean up animation map
         WidgetAnimationState.animatingTasks.value = WidgetAnimationState.animatingTasks.value - taskId
+        
+        // Update widget instantly
         TodoWidget().update(context, glanceId)
         
         // Broadcast updates to all widgets to slide remaining tasks

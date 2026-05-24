@@ -131,10 +131,36 @@ fun MainScreen(
 
     val context = LocalContext.current
 
+    // Detect triple-tap on blank screen areas
+    var tripleTapCount by remember { mutableStateOf(0) }
+    var lastTapTime by remember { mutableStateOf(0L) }
+
+    val onBlankAreaTap = {
+        val now = System.currentTimeMillis()
+        if (now - lastTapTime < 1500) {
+            tripleTapCount++
+        } else {
+            tripleTapCount = 1
+        }
+        lastTapTime = now
+
+        if (tripleTapCount >= 3) {
+            currentTab = if (currentTab == "TODO") "HISTORY" else "TODO"
+            tripleTapCount = 0
+            Toast.makeText(context, "Revealing ${if (currentTab == "TODO") "Active Tasks" else "Task History"}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Column(
         modifier = modifier
             .background(Color.Black)
             .padding(horizontal = 16.dp)
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null
+            ) {
+                onBlankAreaTap()
+            }
     ) {
         // App Title Header
         Text(
@@ -148,76 +174,30 @@ fun MainScreen(
                 .padding(top = 16.dp, bottom = 12.dp)
         )
 
-        // Navigation Tab Panel
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { currentTab = "TODO" }
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "ACTIVE",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = if (currentTab == "TODO") FontWeight.Bold else FontWeight.Normal,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(1.dp)
-                        .background(if (currentTab == "TODO") Color.White else Color.Transparent)
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { currentTab = "HISTORY" }
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "HISTORY",
-                    color = Color.White,
-                    fontSize = 12.sp,
-                    fontWeight = if (currentTab == "HISTORY") FontWeight.Bold else FontWeight.Normal,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(1.dp)
-                        .background(if (currentTab == "HISTORY") Color.White else Color.Transparent)
-                )
-            }
-        }
-
-        // Active screens panel
+        // Active screens panel (Navigation tab panel row completely hidden as instructed)
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onBlankAreaTap()
+                }
         ) {
             if (currentTab == "TODO") {
                 ActiveTasksScreen(
                     tasks = activeTasks,
                     onComplete = { viewModel.completeTask(it) },
-                    onDelete = { viewModel.deleteTask(it) }
+                    onDelete = { viewModel.deleteTask(it) },
+                    onBlankAreaTap = onBlankAreaTap
                 )
             } else {
                 HistoryScreen(
                     tasks = completedTasks,
-                    onDelete = { viewModel.deleteTask(it) }
+                    onDelete = { viewModel.deleteTask(it) },
+                    onBlankAreaTap = onBlankAreaTap
                 )
             }
         }
@@ -497,11 +477,17 @@ fun MainScreen(
 fun ActiveTasksScreen(
     tasks: List<Task>,
     onComplete: (Task) -> Unit,
-    onDelete: (Task) -> Unit
+    onDelete: (Task) -> Unit,
+    onBlankAreaTap: () -> Unit = {}
 ) {
     if (tasks.isEmpty()) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onBlankAreaTap() },
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -513,7 +499,12 @@ fun ActiveTasksScreen(
         }
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onBlankAreaTap() }
         ) {
             items(tasks, key = { it.id }) { task ->
                 Row(
@@ -581,11 +572,17 @@ fun ActiveTasksScreen(
 @Composable
 fun HistoryScreen(
     tasks: List<Task>,
-    onDelete: (Task) -> Unit
+    onDelete: (Task) -> Unit,
+    onBlankAreaTap: () -> Unit = {}
 ) {
     if (tasks.isEmpty()) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onBlankAreaTap() },
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -597,7 +594,12 @@ fun HistoryScreen(
         }
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onBlankAreaTap() }
         ) {
             items(tasks, key = { it.id }) { task ->
                 Row(
