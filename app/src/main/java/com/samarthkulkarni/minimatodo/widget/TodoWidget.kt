@@ -24,6 +24,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.samarthkulkarni.minimatodo.QuickAddActivity
 import com.samarthkulkarni.minimatodo.data.AppDatabase
+import com.samarthkulkarni.minimatodo.data.MarkdownTaskStore
 import com.samarthkulkarni.minimatodo.data.Task
 import com.samarthkulkarni.minimatodo.worker.TaskDeadlineScheduler
 import java.text.SimpleDateFormat
@@ -166,6 +167,10 @@ class CompleteTaskAction : ActionCallback {
             )
             TaskDeadlineScheduler.cancelDeadlineNotification(context, taskId)
         }
+
+        // Write through to tasks.md so the file stays the source of truth for sync,
+        // matching TaskRepository's behavior for completions done inside the app.
+        MarkdownTaskStore(context).writeAll(db.taskDao().getAllTasksDirect())
 
         // Clean up animation map
         WidgetAnimationState.animatingTasks.value = WidgetAnimationState.animatingTasks.value - taskId

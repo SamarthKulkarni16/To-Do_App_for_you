@@ -17,6 +17,15 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isCompleted = 0 ORDER BY id DESC")
     suspend fun getActiveTasksDirect(): List<Task>
 
+    @Query("SELECT * FROM tasks ORDER BY id DESC")
+    suspend fun getAllTasksDirect(): List<Task>
+
+    @Query("SELECT COUNT(*) FROM tasks")
+    suspend fun countTasks(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(tasks: List<Task>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTask(task: Task): Long
 

@@ -107,10 +107,16 @@ class MainActivity : ComponentActivity() {
 // VM architectural block representing local interactions
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
-    private val repository = TaskRepository(db.taskDao())
+    private val repository = TaskRepository(db.taskDao(), MarkdownTaskStore(application))
 
     val activeTasks = repository.activeTasks
     val completedTasks = repository.completedTasks
+
+    init {
+        viewModelScope.launch {
+            repository.hydrateFromMarkdownIfNeeded()
+        }
+    }
 
     fun addTask(text: String, startDate: Long?, endDate: Long?) {
         viewModelScope.launch {
