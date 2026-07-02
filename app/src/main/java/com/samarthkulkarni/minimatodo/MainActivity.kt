@@ -2,11 +2,13 @@ package com.samarthkulkarni.minimatodo
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,20 +40,26 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.samarthkulkarni.minimatodo.auth.AuthScreen
+import com.samarthkulkarni.minimatodo.auth.AuthViewModel
 import com.samarthkulkarni.minimatodo.data.AppDatabase
 import com.samarthkulkarni.minimatodo.data.Task
 import com.samarthkulkarni.minimatodo.data.TaskRepository
 import com.samarthkulkarni.minimatodo.ui.theme.MyApplicationTheme
 import com.samarthkulkarni.minimatodo.worker.TaskDeadlineScheduler
 import com.samarthkulkarni.minimatodo.widget.TodoWidgetReceiver
+import io.github.jan.supabase.auth.SessionStatus
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : ComponentActivity() {
+    private val authViewModel: AuthViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        authViewModel.handleDeeplink(intent)
         setContent {
             MyApplicationTheme {
                 Scaffold(
@@ -60,14 +68,39 @@ class MainActivity : ComponentActivity() {
                         .background(Color.Black),
                     containerColor = Color.Black
                 ) { innerPadding ->
-                    MainScreen(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    )
+                    val sessionStatus by authViewModel.sessionStatus.collectAsStateWithLifecycle()
+
+                    when (sessionStatus) {
+                        is SessionStatus.Authenticated -> {
+                            MainScreen(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding),
+                                onSignOut = { authViewModel.signOut() }
+                            )
+                        }
+                        is SessionStatus.Initializing -> {
+                            // Session is still being restored from storage; avoid an auth-screen flash.
+                            Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                        }
+                        else -> {
+                            AuthScreen(
+                                viewModel = authViewModel,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        authViewModel.handleDeeplink(intent)
     }
 }
 
@@ -116,7 +149,8 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
-    viewModel: TaskViewModel = viewModel()
+    viewModel: TaskViewModel = viewModel(),
+    onSignOut: () -> Unit = {}
 ) {
     val activeTasks by viewModel.activeTasks.collectAsStateWithLifecycle(initialValue = emptyList())
     val completedTasks by viewModel.completedTasks.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -468,6 +502,26 @@ fun MainScreen(
                             .padding(8.dp)
                     )
                 }
+            }
+        } else {
+            // Sign-out footer, visible only on the History tab (kept out of the way of the main flow).
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "SIGN OUT",
+                    color = Color.DarkGray,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier
+                        .clickable { onSignOut() }
+                        .padding(8.dp)
+                )
             }
         }
     }
