@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 class AuthRepository {
 
     private val auth = SupabaseClientProvider.auth
+    private val client = SupabaseClientProvider.client
 
     /** Emits Authenticated / NotAuthenticated / RefreshFailure / Initializing as the session changes. */
     val sessionStatus: StateFlow<SessionStatus> = auth.sessionStatus
@@ -41,7 +42,7 @@ class AuthRepository {
 
     /** Call from MainActivity.onCreate/onNewIntent so supabase-kt can complete the OAuth deep link. */
     suspend fun handleDeeplink(intent: Intent) {
-        auth.handleDeeplinks(intent)
+        client.handleDeeplinks(intent)
     }
 
     suspend fun sendPasswordReset(email: String) {
