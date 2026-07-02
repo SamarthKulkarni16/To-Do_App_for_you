@@ -45,11 +45,12 @@ import com.samarthkulkarni.minimatodo.auth.AuthViewModel
 import com.samarthkulkarni.minimatodo.data.AppDatabase
 import com.samarthkulkarni.minimatodo.data.Task
 import com.samarthkulkarni.minimatodo.data.TaskRepository
+import com.samarthkulkarni.minimatodo.data.MarkdownTaskStore
 import com.samarthkulkarni.minimatodo.ui.theme.MyApplicationTheme
 import com.samarthkulkarni.minimatodo.worker.TaskDeadlineScheduler
 import com.samarthkulkarni.minimatodo.worker.SyncScheduler
 import com.samarthkulkarni.minimatodo.widget.TodoWidgetReceiver
-import io.github.jan.supabase.auth.SessionStatus
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
