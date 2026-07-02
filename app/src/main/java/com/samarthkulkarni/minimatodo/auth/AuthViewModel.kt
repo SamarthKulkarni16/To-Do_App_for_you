@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.samarthkulkarni.minimatodo.data.AuthRepository
-import io.github.jan.supabase.auth.SessionStatus
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
