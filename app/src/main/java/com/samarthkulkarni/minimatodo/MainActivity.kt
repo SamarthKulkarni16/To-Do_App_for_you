@@ -547,7 +547,6 @@ fun MainScreen(
             }
         }
     }
-}
 
 @Composable
 fun ActiveTasksScreen(
