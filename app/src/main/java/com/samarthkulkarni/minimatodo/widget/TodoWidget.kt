@@ -1,4 +1,4 @@
-package com.example.widget
+package com.samarthkulkarni.minimatodo.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -22,10 +22,10 @@ import androidx.glance.layout.*
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.example.QuickAddActivity
-import com.example.data.AppDatabase
-import com.example.data.Task
-import com.example.worker.TaskDeadlineScheduler
+import com.samarthkulkarni.minimatodo.QuickAddActivity
+import com.samarthkulkarni.minimatodo.data.AppDatabase
+import com.samarthkulkarni.minimatodo.data.Task
+import com.samarthkulkarni.minimatodo.worker.TaskDeadlineScheduler
 import java.text.SimpleDateFormat
 import java.util.*
 

@@ -1,4 +1,4 @@
-package com.example
+package com.samarthkulkarni.minimatodo
 
 import android.content.Context
 import android.os.Bundle
@@ -26,9 +26,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
-import com.example.data.AppDatabase
-import com.example.data.Task
-import com.example.widget.TodoWidgetReceiver
+import com.samarthkulkarni.minimatodo.data.AppDatabase
+import com.samarthkulkarni.minimatodo.data.Task
+import com.samarthkulkarni.minimatodo.widget.TodoWidgetReceiver
 import kotlinx.coroutines.launch
 
 class QuickAddActivity : ComponentActivity() {

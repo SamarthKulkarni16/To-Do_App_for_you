@@ -1,4 +1,4 @@
-package com.example
+package com.samarthkulkarni.minimatodo
 
 import android.app.Application
 import android.content.Context
@@ -38,12 +38,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.data.AppDatabase
-import com.example.data.Task
-import com.example.data.TaskRepository
-import com.example.ui.theme.MyApplicationTheme
-import com.example.worker.TaskDeadlineScheduler
-import com.example.widget.TodoWidgetReceiver
+import com.samarthkulkarni.minimatodo.data.AppDatabase
+import com.samarthkulkarni.minimatodo.data.Task
+import com.samarthkulkarni.minimatodo.data.TaskRepository
+import com.samarthkulkarni.minimatodo.ui.theme.MyApplicationTheme
+import com.samarthkulkarni.minimatodo.worker.TaskDeadlineScheduler
+import com.samarthkulkarni.minimatodo.widget.TodoWidgetReceiver
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*

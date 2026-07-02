@@ -1,4 +1,4 @@
-package com.example.worker
+package com.samarthkulkarni.minimatodo.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,8 +9,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.MainActivity
-import com.example.data.AppDatabase
+import com.samarthkulkarni.minimatodo.MainActivity
+import com.samarthkulkarni.minimatodo.data.AppDatabase
 
 class TaskDeadlineWorker(
     appContext: Context,

@@ -1,4 +1,4 @@
-package com.example.data
+package com.samarthkulkarni.minimatodo.data
 
 import kotlinx.coroutines.flow.Flow
 

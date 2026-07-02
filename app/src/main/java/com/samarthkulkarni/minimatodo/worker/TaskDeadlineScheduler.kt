@@ -1,8 +1,8 @@
-package com.example.worker
+package com.samarthkulkarni.minimatodo.worker
 
 import android.content.Context
 import androidx.work.*
-import com.example.data.Task
+import com.samarthkulkarni.minimatodo.data.Task
 import java.util.concurrent.TimeUnit
 
 object TaskDeadlineScheduler {

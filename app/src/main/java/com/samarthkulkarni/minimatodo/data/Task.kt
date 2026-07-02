@@ -1,4 +1,4 @@
-package com.example.data
+package com.samarthkulkarni.minimatodo.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

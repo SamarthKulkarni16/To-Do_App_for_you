@@ -1,4 +1,4 @@
-package com.example.widget
+package com.samarthkulkarni.minimatodo.widget
 
 import kotlinx.coroutines.flow.MutableStateFlow
 
