@@ -36,10 +36,12 @@ class MarkdownTaskStore(context: Context) {
         for (task in tasks) {
             sb.appendLine("## ${escapeTitle(task.text)}")
             sb.appendLine("- id: ${task.id}")
+            sb.appendLine("- remote_id: ${task.remoteId ?: ""}")
             sb.appendLine("- completed: ${task.isCompleted}")
             sb.appendLine("- start: ${task.startDate ?: ""}")
             sb.appendLine("- end: ${task.endDate ?: ""}")
             sb.appendLine("- completed_at: ${task.completedTimestamp ?: ""}")
+            sb.appendLine("- updated_at: ${task.updatedAt}")
             sb.appendLine()
         }
         return sb.toString()
@@ -51,10 +53,12 @@ class MarkdownTaskStore(context: Context) {
 
         var title: String? = null
         var id = 0
+        var remoteId: String? = null
         var completed = false
         var start: Long? = null
         var end: Long? = null
         var completedAt: Long? = null
+        var updatedAt: Long = System.currentTimeMillis()
 
         fun flush() {
             val t = title
@@ -66,16 +70,20 @@ class MarkdownTaskStore(context: Context) {
                         isCompleted = completed,
                         startDate = start,
                         endDate = end,
-                        completedTimestamp = completedAt
+                        completedTimestamp = completedAt,
+                        remoteId = remoteId,
+                        updatedAt = updatedAt
                     )
                 )
             }
             title = null
             id = 0
+            remoteId = null
             completed = false
             start = null
             end = null
             completedAt = null
+            updatedAt = System.currentTimeMillis()
         }
 
         for (rawLine in lines) {
@@ -86,10 +94,12 @@ class MarkdownTaskStore(context: Context) {
                     title = line.removePrefix("## ").trim()
                 }
                 line.startsWith("- id: ") -> id = line.removePrefix("- id: ").trim().toIntOrNull() ?: 0
+                line.startsWith("- remote_id: ") -> remoteId = line.removePrefix("- remote_id: ").trim().ifBlank { null }
                 line.startsWith("- completed: ") -> completed = line.removePrefix("- completed: ").trim().toBoolean()
                 line.startsWith("- start: ") -> start = line.removePrefix("- start: ").trim().toLongOrNull()
                 line.startsWith("- end: ") -> end = line.removePrefix("- end: ").trim().toLongOrNull()
                 line.startsWith("- completed_at: ") -> completedAt = line.removePrefix("- completed_at: ").trim().toLongOrNull()
+                line.startsWith("- updated_at: ") -> updatedAt = line.removePrefix("- updated_at: ").trim().toLongOrNull() ?: updatedAt
             }
         }
         flush()

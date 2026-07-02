@@ -47,6 +47,7 @@ import com.samarthkulkarni.minimatodo.data.Task
 import com.samarthkulkarni.minimatodo.data.TaskRepository
 import com.samarthkulkarni.minimatodo.ui.theme.MyApplicationTheme
 import com.samarthkulkarni.minimatodo.worker.TaskDeadlineScheduler
+import com.samarthkulkarni.minimatodo.worker.SyncScheduler
 import com.samarthkulkarni.minimatodo.widget.TodoWidgetReceiver
 import io.github.jan.supabase.auth.SessionStatus
 import kotlinx.coroutines.launch
@@ -69,6 +70,19 @@ class MainActivity : ComponentActivity() {
                     containerColor = Color.Black
                 ) { innerPadding ->
                     val sessionStatus by authViewModel.sessionStatus.collectAsStateWithLifecycle()
+
+                    LaunchedEffect(sessionStatus) {
+                        when (sessionStatus) {
+                            is SessionStatus.Authenticated -> {
+                                SyncScheduler.schedulePeriodicSync(applicationContext)
+                                SyncScheduler.requestImmediateSync(applicationContext)
+                            }
+                            is SessionStatus.NotAuthenticated -> {
+                                SyncScheduler.cancelPeriodicSync(applicationContext)
+                            }
+                            else -> Unit
+                        }
+                    }
 
                     when (sessionStatus) {
                         is SessionStatus.Authenticated -> {
@@ -107,7 +121,7 @@ class MainActivity : ComponentActivity() {
 // VM architectural block representing local interactions
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
-    private val repository = TaskRepository(db.taskDao(), MarkdownTaskStore(application))
+    private val repository = TaskRepository(db.taskDao(), MarkdownTaskStore(application), application)
 
     val activeTasks = repository.activeTasks
     val completedTasks = repository.completedTasks

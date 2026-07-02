@@ -30,6 +30,7 @@ import com.samarthkulkarni.minimatodo.data.AppDatabase
 import com.samarthkulkarni.minimatodo.data.MarkdownTaskStore
 import com.samarthkulkarni.minimatodo.data.Task
 import com.samarthkulkarni.minimatodo.widget.TodoWidgetReceiver
+import com.samarthkulkarni.minimatodo.worker.SyncScheduler
 import kotlinx.coroutines.launch
 
 class QuickAddActivity : ComponentActivity() {
@@ -164,6 +165,7 @@ class QuickAddActivity : ComponentActivity() {
             )
             // Write through to tasks.md so the file stays the source of truth for sync.
             MarkdownTaskStore(applicationContext).writeAll(db.taskDao().getAllTasksDirect())
+            SyncScheduler.requestImmediateSync(applicationContext)
             // Refresh home widgets immediately
             TodoWidgetReceiver.updateAllWidgets(applicationContext)
             finish()
