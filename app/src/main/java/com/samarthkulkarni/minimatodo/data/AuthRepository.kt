@@ -3,6 +3,7 @@ package com.samarthkulkarni.minimatodo.data
 import android.content.Intent
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.flow.StateFlow
