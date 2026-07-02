@@ -39,7 +39,20 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: ./gradlew assembleRelease
+        run: |
+          set +e
+          ./gradlew assembleRelease --stacktrace > gradle_output.log 2>&1
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "===== GRADLE BUILD FAILED - last 200 lines ====="
+            tail -n 200 gradle_output.log
+            echo "===== ERROR-LEVEL LINES ====="
+            grep -E -i "error:|error |exception|FAILED|FAILURE:|e: file|Caused by|Unresolved reference|cannot find symbol" gradle_output.log | tail -n 40 | while IFS= read -r line; do
+              clean_line=$(echo "$line" | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g' | cut -c1-500)
+              echo "::error::${clean_line}"
+            done
+            exit $EXIT_CODE
+          fi
 
       - name: Clean up keystore from runner
         if: always()
