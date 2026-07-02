@@ -524,8 +524,9 @@ fun MainScreen(
                     )
                 }
             }
-        } else {
-            // Sign-out footer, visible only on the History tab (kept out of the way of the main flow).
+        }
+    } else {
+        // Sign-out footer, visible only on the History tab (kept out of the way of the main flow).
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
