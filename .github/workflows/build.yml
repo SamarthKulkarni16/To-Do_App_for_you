@@ -1,0 +1,59 @@
+name: Build signed release APK
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+# contents:write is required for softprops/action-gh-release to create
+# releases and upload assets. Declared explicitly since GitHub restricts
+# the default token to read-only on many repos.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: ./gradlew assembleRelease
+
+      - name: Clean up keystore from runner
+        if: always()
+        run: rm -f release.keystore
+
+      - name: Rename APK for public download
+        run: cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/minima-todo.apk
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Minima Todo v1.0.${{ github.run_number }}"
+          files: app/build/outputs/apk/release/minima-todo.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
