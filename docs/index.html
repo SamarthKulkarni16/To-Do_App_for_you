@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Minima Todo</title>
+<style>
+  :root{
+    --bg:#000000;
+    --fg:#ffffff;
+    --gray:#8a8a8a;
+    --darkgray:#4a4a4a;
+    --divider:#1c1c1c;
+    --border:#2a2a2a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    background:var(--bg);
+    color:var(--fg);
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100dvh;
+    width:100vw;
+  }
+
+  /* ---------- Preview stage ---------- */
+  .stage{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    padding:2.5vh 16px 0;
+  }
+
+  /* ---------- Phone mock ---------- */
+  .phone{
+    width:min(380px,90vw);
+    height:min(640px,70vh);
+    border:1px solid var(--border);
+    border-radius:30px;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+    padding:22px 20px 16px;
+    position:relative;
+    opacity:1;
+    transition:opacity 320ms ease;
+  }
+  .phone-title{
+    text-align:center;
+    font-size:clamp(14px,3.6vw,17px);
+    font-weight:700;
+    letter-spacing:4px;
+    color:var(--fg);
+    padding:2px 0 14px;
+    flex-shrink:0;
+  }
+  .task-area{
+    flex:1 1 auto;
+    min-height:0;
+    position:relative;
+    overflow:hidden;
+  }
+  .empty-state{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--darkgray);
+    font-size:12px;
+    letter-spacing:1px;
+  }
+  .task-row{
+    display:flex;
+    align-items:center;
+    padding:11px 0;
+    border-bottom:0.5px solid var(--divider);
+  }
+  .task-row.enter{animation:rowEnter 320ms ease;}
+  @keyframes rowEnter{
+    from{opacity:0;transform:translateY(8px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  .checkbox{
+    width:16px;height:16px;
+    border:1px solid var(--fg);
+    flex-shrink:0;
+    margin-right:12px;
+  }
+  .task-main{flex:1 1 auto;min-width:0;}
+  .task-text{
+    color:var(--fg);
+    font-size:clamp(13px,3.4vw,15px);
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .task-text.history{
+    color:var(--gray);
+    font-weight:400;
+    text-decoration:line-through;
+  }
+  .task-meta{
+    color:var(--gray);
+    font-size:10.5px;
+    margin-top:3px;
+  }
+  .task-meta.history{color:var(--darkgray);}
+  .task-delete{
+    color:var(--fg);
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:0.4px;
+    flex-shrink:0;
+    margin-left:10px;
+  }
+
+  /* ---------- Schedule summary ---------- */
+  .schedule-summary{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    border:1px solid var(--fg);
+    border-radius:2px;
+    padding:8px;
+    margin-bottom:8px;
+    opacity:0;
+    transform:translateY(6px);
+    transition:opacity 250ms ease, transform 250ms ease;
+    flex-shrink:0;
+  }
+  .schedule-summary.show{opacity:1;transform:translateY(0);}
+  .schedule-summary .summary-text{color:var(--fg);font-size:11px;}
+  .schedule-summary .clear-label{color:var(--fg);font-size:11px;font-weight:700;letter-spacing:0.3px;}
+
+  /* ---------- Input row ---------- */
+  .input-row{
+    display:flex;
+    align-items:center;
+    padding-top:8px;
+    flex-shrink:0;
+  }
+  .input-wrap{flex:1 1 auto;min-width:0;}
+  .input-text-area{
+    position:relative;
+    height:20px;
+    display:flex;
+    align-items:center;
+  }
+  .input-placeholder{
+    color:var(--darkgray);
+    font-size:clamp(13px,3.4vw,15px);
+  }
+  .input-text{
+    color:var(--fg);
+    font-size:clamp(13px,3.4vw,15px);
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .cursor{
+    display:none;
+    width:1px;
+    height:16px;
+    background:var(--fg);
+    margin-left:2px;
+    animation:blink 900ms steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  .input-underline{
+    height:1px;
+    background:var(--fg);
+    margin-top:4px;
+  }
+  .clock-wrap{
+    width:36px;height:36px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    margin-left:8px;
+  }
+  .clock-wrap svg{transition:transform 160ms ease;}
+  .clock-wrap.tapped svg{transform:scale(0.82);}
+  .clock-dot{
+    display:none;
+    position:absolute;
+    top:5px;right:6px;
+    width:6px;height:6px;
+    background:var(--fg);
+    border-radius:50%;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:absolute;
+    left:50%;
+    bottom:6px;
+    transform:translate(-50%,10px);
+    background:#141414;
+    border:1px solid #303030;
+    color:var(--fg);
+    font-size:10.5px;
+    letter-spacing:0.2px;
+    padding:8px 14px;
+    border-radius:20px;
+    opacity:0;
+    transition:opacity 250ms ease, transform 250ms ease;
+    pointer-events:none;
+    white-space:nowrap;
+    z-index:5;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ---------- Tap ripple ---------- */
+  .tap-ripple{
+    position:absolute;
+    left:50%;top:50%;
+    width:10px;height:10px;
+    border:1px solid var(--fg);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    opacity:0.75;
+    animation:rippleAnim 550ms ease-out forwards;
+    pointer-events:none;
+  }
+  @keyframes rippleAnim{
+    to{width:130px;height:130px;opacity:0;}
+  }
+
+  /* ---------- Widget mock ---------- */
+  .widget{
+    width:min(340px,86vw);
+    border:1px solid var(--border);
+    border-radius:22px;
+    background:var(--bg);
+    padding:18px 20px;
+    display:none;
+    flex-direction:column;
+    opacity:0;
+    transition:opacity 320ms ease;
+    position:absolute;
+  }
+  .widget-row{
+    position:relative;
+    padding:9px 0;
+    overflow:hidden;
+    transition:opacity 480ms ease, transform 480ms ease, max-height 480ms ease, padding 480ms ease, margin 480ms ease;
+  }
+  .widget-row.collapsing{
+    opacity:0;
+    transform:scale(0.85);
+    max-height:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  .widget-text{
+    color:var(--fg);
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .widget-strike{
+    position:absolute;
+    left:0;top:50%;
+    height:1px;
+    width:0%;
+    background:var(--fg);
+  }
+
+  /* ---------- Download button ---------- */
+  .download-wrap{
+    flex-shrink:0;
+    display:flex;
+    justify-content:center;
+    padding:2.2vh 16px calc(3vh + env(safe-area-inset-bottom, 0px));
+  }
+  .download-btn{
+    appearance:none;
+    background:var(--bg);
+    color:var(--fg);
+    border:1px solid var(--fg);
+    padding:14px 54px;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:3px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-block;
+    transition:background 150ms ease, color 150ms ease;
+  }
+  .download-btn:active{
+    background:var(--fg);
+    color:var(--bg);
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage" id="stage">
+    <div class="phone" id="phone">
+      <div class="phone-title">M I N I M A</div>
+
+      <div class="task-area" id="taskArea"></div>
+
+      <div class="schedule-summary" id="scheduleSummary">
+        <div class="summary-text" id="summaryText"></div>
+        <div class="clear-label">CLEAR</div>
+      </div>
+
+      <div class="input-row" id="inputRow">
+        <div class="input-wrap">
+          <div class="input-text-area">
+            <div class="input-placeholder" id="inputPlaceholder">Enter task...</div>
+            <div class="input-text" id="inputText"></div>
+            <div class="cursor" id="cursor"></div>
+          </div>
+          <div class="input-underline"></div>
+        </div>
+        <div class="clock-wrap" id="clockWrap">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="12" y1="12" x2="12" y2="6" stroke="#ffffff" stroke-width="1.5"/>
+            <line x1="12" y1="12" x2="16" y2="12" stroke="#ffffff" stroke-width="1.5"/>
+          </svg>
+          <div class="clock-dot" id="clockDot"></div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <div class="widget" id="widget">
+      <div id="widgetTasks"></div>
+    </div>
+  </div>
+
+  <div class="download-wrap">
+    <a class="download-btn" id="downloadBtn" href="https://github.com/SamarthKulkarni16/To-Do_App_for_you/releases/latest/download/minima-todo.apk" download>Download</a>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  var TASK_PAIRS = [
+    ["Buy groceries", "Call the dentist"],
+    ["Reply to emails", "Book flight tickets"],
+    ["Water the plants", "Finish reading chapter"],
+    ["Clean the kitchen", "Submit tax documents"],
+    ["Walk the dog", "Prepare presentation slides"],
+    ["Pay electricity bill", "Schedule team meeting"],
+    ["Backup laptop files", "Renew gym membership"],
+    ["Write journal entry", "Fix the leaking tap"],
+    ["Plan weekend trip", "Update resume"],
+    ["Organize desk", "Call mom"],
+    ["Read 20 pages", "Review pull requests"],
+    ["Make grocery list", "Send invoice to client"],
+    ["Meditate 10 minutes", "Pick up dry cleaning"],
+    ["Refill water bottle", "Draft blog post"],
+    ["Charge headphones", "Confirm dinner reservation"],
+    ["Tidy the bookshelf", "Renew car insurance"]
+  ];
+
+  var phoneEl = document.getElementById('phone');
+  var widgetEl = document.getElementById('widget');
+  var taskArea = document.getElementById('taskArea');
+  var inputRow = document.getElementById('inputRow');
+  var inputPlaceholder = document.getElementById('inputPlaceholder');
+  var inputTextEl = document.getElementById('inputText');
+  var cursorEl = document.getElementById('cursor');
+  var clockWrap = document.getElementById('clockWrap');
+  var clockDot = document.getElementById('clockDot');
+  var scheduleSummary = document.getElementById('scheduleSummary');
+  var summaryText = document.getElementById('summaryText');
+  var toastEl = document.getElementById('toast');
+  var widgetTasksEl = document.getElementById('widgetTasks');
+
+  var state = { tab: 'TODO', activeTasks: [], historyTasks: [] };
+
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function formatDisplayDate(d){
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var mm = months[d.getMonth()];
+    var dd = String(d.getDate()).padStart(2,'0');
+    var h = d.getHours();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    var hh = String(h).padStart(2,'0');
+    var min = String(d.getMinutes()).padStart(2,'0');
+    return mm + ' ' + dd + ', ' + hh + ':' + min + ' ' + ampm;
+  }
+
+  function el(html){
+    var t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return t.content.firstElementChild;
+  }
+
+  function renderActiveList(highlightId){
+    taskArea.innerHTML = '';
+    if (state.activeTasks.length === 0){
+      taskArea.appendChild(el('<div class="empty-state">NO ACTIVE TASKS</div>'));
+      return;
+    }
+    state.activeTasks.forEach(function(t){
+      var meta = t.endDate ? '<div class="task-meta">Deadline: ' + formatDisplayDate(t.endDate) + '</div>' : '';
+      var row = el(
+        '<div class="task-row">' +
+          '<div class="checkbox"></div>' +
+          '<div class="task-main">' +
+            '<div class="task-text">' + escapeHtml(t.text) + '</div>' +
+            meta +
+          '</div>' +
+          '<div class="task-delete">DELETE</div>' +
+        '</div>'
+      );
+      if (highlightId && t.id === highlightId) row.classList.add('enter');
+      taskArea.appendChild(row);
+    });
+  }
+
+  function renderHistoryList(){
+    taskArea.innerHTML = '';
+    if (state.historyTasks.length === 0){
+      taskArea.appendChild(el('<div class="empty-state">NO COMPLETED HISTORY</div>'));
+      return;
+    }
+    state.historyTasks.forEach(function(t){
+      var row = el(
+        '<div class="task-row">' +
+          '<div class="task-main">' +
+            '<div class="task-text history">' + escapeHtml(t.text) + '</div>' +
+            '<div class="task-meta history">Completed: ' + formatDisplayDate(t.completedAt) + '</div>' +
+          '</div>' +
+          '<div class="task-delete">REMOVE</div>' +
+        '</div>'
+      );
+      taskArea.appendChild(row);
+    });
+  }
+
+  function updateInputRowVisibility(){
+    inputRow.style.display = state.tab === 'TODO' ? 'flex' : 'none';
+    scheduleSummary.style.display = (state.tab === 'TODO' && scheduleSummary.classList.contains('show')) ? 'flex' : 'none';
+  }
+
+  async function typeInto(text){
+    inputPlaceholder.style.display = 'none';
+    inputTextEl.textContent = '';
+    cursorEl.style.display = 'inline-block';
+    for (var i = 0; i < text.length; i++){
+      inputTextEl.textContent += text[i];
+      await sleep(48 + Math.random() * 40);
+    }
+    await sleep(300);
+  }
+
+  async function openScheduleAndConfirm(deadlineDate){
+    clockWrap.classList.add('tapped');
+    await sleep(160);
+    clockWrap.classList.remove('tapped');
+    clockDot.style.display = 'block';
+
+    summaryText.textContent = 'End: ' + formatDisplayDate(deadlineDate);
+    scheduleSummary.style.display = 'flex';
+    void scheduleSummary.offsetWidth;
+    scheduleSummary.classList.add('show');
+    await sleep(950);
+  }
+
+  function clearComposer(){
+    inputTextEl.textContent = '';
+    cursorEl.style.display = 'none';
+    inputPlaceholder.style.display = 'block';
+    scheduleSummary.classList.remove('show');
+    scheduleSummary.style.display = 'none';
+    clockDot.style.display = 'none';
+  }
+
+  async function submitTask2(text, deadlineDate){
+    var task = { id: 2, text: text, endDate: deadlineDate };
+    state.activeTasks.push(task);
+    renderActiveList(2);
+    clearComposer();
+  }
+
+  function renderWidget(){
+    widgetTasksEl.innerHTML = '';
+    state.activeTasks.forEach(function(t){
+      var label = t.endDate ? '\u2022  ' + t.text + ' (H)' : '\u2022  ' + t.text;
+      var row = el(
+        '<div class="widget-row" data-id="' + t.id + '">' +
+          '<div class="widget-text">' + escapeHtml(label) + '</div>' +
+          '<div class="widget-strike"></div>' +
+        '</div>'
+      );
+      widgetTasksEl.appendChild(row);
+    });
+  }
+
+  async function widgetCompleteTask(taskId){
+    var row = widgetTasksEl.querySelector('[data-id="' + taskId + '"]');
+    if (!row) return;
+    var strike = row.querySelector('.widget-strike');
+    var rect = row.getBoundingClientRect();
+
+    strike.style.transition = 'width 550ms linear';
+    requestAnimationFrame(function(){ strike.style.width = '100%'; });
+    await sleep(600);
+
+    row.style.maxHeight = rect.height + 'px';
+    void row.offsetHeight;
+    row.classList.add('collapsing');
+    await sleep(500);
+    row.remove();
+
+    var idx = -1;
+    for (var i = 0; i < state.activeTasks.length; i++){
+      if (state.activeTasks[i].id === taskId){ idx = i; break; }
+    }
+    if (idx !== -1){
+      var task = state.activeTasks.splice(idx, 1)[0];
+      state.historyTasks.unshift({ id: task.id, text: task.text, completedAt: new Date() });
+    }
+  }
+
+  async function crossfade(hideEl, showEl){
+    hideEl.style.opacity = '0';
+    await sleep(320);
+    hideEl.style.display = 'none';
+    showEl.style.display = 'flex';
+    showEl.style.opacity = '0';
+    void showEl.offsetWidth;
+    showEl.style.opacity = '1';
+    await sleep(320);
+  }
+
+  function spawnRipple(){
+    var r = document.createElement('div');
+    r.className = 'tap-ripple';
+    taskArea.appendChild(r);
+    r.addEventListener('animationend', function(){ r.remove(); });
+  }
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+  }
+  function hideToast(){
+    toastEl.classList.remove('show');
+  }
+
+  async function tripleTapDemo(){
+    for (var i = 0; i < 3; i++){
+      spawnRipple();
+      await sleep(190);
+    }
+    await sleep(250);
+    showToast('Revealing Task History');
+    await sleep(1100);
+    hideToast();
+    await sleep(250);
+  }
+
+  async function fadeReset(fn){
+    phoneEl.style.opacity = '0';
+    await sleep(300);
+    fn();
+    await sleep(40);
+    phoneEl.style.opacity = '1';
+    await sleep(320);
+  }
+
+  async function runDemo(){
+    var pair = TASK_PAIRS[Math.floor(Math.random() * TASK_PAIRS.length)];
+
+    while (true){
+      state.tab = 'TODO';
+      state.activeTasks = [{ id: 1, text: pair[0] }];
+      state.historyTasks = [];
+      clearComposer();
+      renderActiveList();
+      updateInputRowVisibility();
+
+      await sleep(1000);
+
+      await typeInto(pair[1]);
+      await sleep(250);
+
+      var deadline = new Date(Date.now() + (2 + Math.random() * 20) * 3600 * 1000);
+      await openScheduleAndConfirm(deadline);
+
+      await submitTask2(pair[1], deadline);
+      await sleep(1300);
+
+      await crossfade(phoneEl, widgetEl);
+      renderWidget();
+      await sleep(900);
+
+      await widgetCompleteTask(1);
+      await sleep(500);
+
+      await crossfade(widgetEl, phoneEl);
+      renderActiveList();
+      await sleep(900);
+
+      await tripleTapDemo();
+      state.tab = 'HISTORY';
+      updateInputRowVisibility();
+      renderHistoryList();
+
+      await sleep(1900);
+
+      await fadeReset(function(){
+        state.tab = 'TODO';
+        renderActiveList();
+        updateInputRowVisibility();
+      });
+
+      await sleep(400);
+    }
+  }
+
+  renderActiveList();
+  updateInputRowVisibility();
+  runDemo();
+})();
+</script>
+</body>
+</html>
