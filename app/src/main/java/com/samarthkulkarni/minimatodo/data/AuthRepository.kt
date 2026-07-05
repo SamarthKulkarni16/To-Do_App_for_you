@@ -26,6 +26,7 @@ class AuthRepository {
     fun currentUser(): UserInfo? = auth.currentUserOrNull()
 
     /** A user is "new" if their account was created within a few seconds of this sign-in. */
+    @OptIn(kotlin.time.ExperimentalTime::class)
     fun isNewAccount(): Boolean {
         val user = currentUser()
         val created = user?.createdAt ?: return false
