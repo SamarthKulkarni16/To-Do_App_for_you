@@ -9,6 +9,11 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,10 +25,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @Composable
 fun AuthScreen(viewModel: AuthViewModel, modifier: Modifier = Modifier) {
     val state = viewModel.uiState
+    val success = state.authSuccess
+
+    if (success != null) {
+        WelcomeOverlay(
+            isNewAccount = success.isNewAccount,
+            onFinished = { viewModel.completeAuthFlow() }
+        )
+        return
+    }
 
     Column(
         modifier = modifier
@@ -34,11 +49,7 @@ fun AuthScreen(viewModel: AuthViewModel, modifier: Modifier = Modifier) {
     ) {
         Text2("M I N I M A", size = 20, bold = true, letterSpaced = true)
         Spacer(modifier = Modifier.height(4.dp))
-        Text2(
-            if (state.mode == AuthMode.SIGN_IN) "SIGN IN TO SYNC YOUR TASKS" else "CREATE AN ACCOUNT",
-            size = 11,
-            color = Color.Gray
-        )
+        Text2("SIGN IN TO SYNC YOUR TASKS", size = 11, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -80,12 +91,7 @@ fun AuthScreen(viewModel: AuthViewModel, modifier: Modifier = Modifier) {
                 .padding(vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text2(
-                if (state.mode == AuthMode.SIGN_IN) "SIGN IN" else "SIGN UP",
-                size = 13,
-                bold = true,
-                color = Color.Black
-            )
+            Text2("CONTINUE", size = 13, bold = true, color = Color.Black)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -101,26 +107,37 @@ fun AuthScreen(viewModel: AuthViewModel, modifier: Modifier = Modifier) {
         ) {
             Text2("CONTINUE WITH GOOGLE", size = 13, bold = true, color = Color.White)
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun WelcomeOverlay(isNewAccount: Boolean, onFinished: () -> Unit) {
+    var phase by remember { mutableStateOf(1) }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text2(
-                if (state.mode == AuthMode.SIGN_IN) "New here? " else "Already have an account? ",
-                size = 12,
-                color = Color.Gray
-            )
-            Text2(
-                if (state.mode == AuthMode.SIGN_IN) "Create account" else "Sign in",
-                size = 12,
-                bold = true,
-                color = Color.White,
-                modifier = Modifier.clickable { viewModel.toggleMode() }
-            )
-        }
+    LaunchedEffect(Unit) {
+        delay(3000)
+        phase = 2
+        delay(2000)
+        onFinished()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Text2(
+            text = when {
+                phase == 1 && isNewAccount -> "Account Created"
+                phase == 1 && !isNewAccount -> "Account Found"
+                isNewAccount -> "Welcome"
+                else -> "Welcome Back"
+            },
+            size = 20,
+            bold = true,
+            color = Color.White
+        )
     }
 }
 

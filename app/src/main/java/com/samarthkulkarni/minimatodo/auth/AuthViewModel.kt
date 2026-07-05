@@ -12,15 +12,16 @@ import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-enum class AuthMode { SIGN_IN, SIGN_UP }
+/** Emitted right after a successful sign-in/sign-up so the UI can show the welcome animation. */
+data class AuthSuccess(val isNewAccount: Boolean)
 
 data class AuthUiState(
-    val mode: AuthMode = AuthMode.SIGN_IN,
     val email: String = "",
     val password: String = "",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val infoMessage: String? = null
+    val infoMessage: String? = null,
+    val authSuccess: AuthSuccess? = null
 )
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -40,14 +41,12 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         uiState = uiState.copy(password = value, errorMessage = null)
     }
 
-    fun toggleMode() {
-        uiState = uiState.copy(
-            mode = if (uiState.mode == AuthMode.SIGN_IN) AuthMode.SIGN_UP else AuthMode.SIGN_IN,
-            errorMessage = null,
-            infoMessage = null
-        )
-    }
-
+    /**
+     * Single entry point for email auth. Tries signing in first; if that fails
+     * (most likely because no account exists yet with this email), attempts to
+     * create one. There's no separate "sign up" mode - the user just enters
+     * their details and continues.
+     */
     fun submitEmailAuth() {
         val email = uiState.email.trim()
         val password = uiState.password
@@ -56,24 +55,32 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             uiState = uiState.copy(errorMessage = "Enter email and password")
             return
         }
-        if (password.length < 6) {
-            uiState = uiState.copy(errorMessage = "Password must be at least 6 characters")
-            return
-        }
 
         uiState = uiState.copy(isLoading = true, errorMessage = null, infoMessage = null)
         viewModelScope.launch {
             try {
-                if (uiState.mode == AuthMode.SIGN_IN) {
-                    repository.signInWithEmail(email, password)
-                } else {
-                    repository.signUpWithEmail(email, password)
-                    uiState = uiState.copy(
-                        infoMessage = "Check your email to confirm your account, then sign in."
-                    )
+                repository.signInWithEmail(email, password)
+                uiState = uiState.copy(authSuccess = AuthSuccess(isNewAccount = false))
+            } catch (signInError: Exception) {
+                if (password.length < 6) {
+                    uiState = uiState.copy(errorMessage = "Password must be at least 6 characters")
+                    uiState = uiState.copy(isLoading = false)
+                    return@launch
                 }
-            } catch (e: Exception) {
-                uiState = uiState.copy(errorMessage = e.message ?: "Something went wrong")
+                try {
+                    repository.signUpWithEmail(email, password)
+                    if (repository.currentUserId != null) {
+                        uiState = uiState.copy(authSuccess = AuthSuccess(isNewAccount = true))
+                    } else {
+                        // Project has email confirmation enabled - no session yet.
+                        uiState = uiState.copy(
+                            infoMessage = "Check your email to confirm your account, then continue"
+                        )
+                    }
+                } catch (signUpError: Exception) {
+                    // Sign-in failed AND sign-up failed (email already registered) -> wrong password.
+                    uiState = uiState.copy(errorMessage = "Incorrect password")
+                }
             } finally {
                 uiState = uiState.copy(isLoading = false)
             }
@@ -93,14 +100,23 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Called from MainActivity once the browser OAuth redirect lands back in the app. */
     fun handleDeeplink(intent: Intent) {
         viewModelScope.launch {
             try {
                 repository.handleDeeplink(intent)
+                if (repository.currentUserId != null) {
+                    uiState = uiState.copy(authSuccess = AuthSuccess(isNewAccount = repository.isNewAccount()))
+                }
             } catch (e: Exception) {
                 uiState = uiState.copy(errorMessage = e.message ?: "Sign-in failed")
             }
         }
+    }
+
+    /** Called once the welcome animation finishes playing. */
+    fun completeAuthFlow() {
+        uiState = uiState.copy(authSuccess = null)
     }
 
     fun signOut() {

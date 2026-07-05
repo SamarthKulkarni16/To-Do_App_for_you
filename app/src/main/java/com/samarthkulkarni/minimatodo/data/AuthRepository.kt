@@ -6,6 +6,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -21,6 +22,16 @@ class AuthRepository {
     val sessionStatus: StateFlow<SessionStatus> = auth.sessionStatus
 
     val currentUserId: String? get() = auth.currentUserOrNull()?.id
+
+    fun currentUser(): UserInfo? = auth.currentUserOrNull()
+
+    /** A user is "new" if their account was created within a few seconds of this sign-in. */
+    fun isNewAccount(): Boolean {
+        val user = currentUser()
+        val created = user?.createdAt ?: return false
+        val lastSignIn = user.lastSignInAt ?: return true
+        return (lastSignIn - created).inWholeSeconds < 5
+    }
 
     suspend fun signUpWithEmail(email: String, password: String) {
         auth.signUpWith(Email) {
