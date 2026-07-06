@@ -78,8 +78,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
                 } catch (signUpError: Exception) {
-                    // Sign-in failed AND sign-up failed (email already registered) -> wrong password.
-                    uiState = uiState.copy(errorMessage = "Incorrect password")
+                    val msg = signUpError.message ?: ""
+                    if (msg.contains("already registered", ignoreCase = true) ||
+                        msg.contains("already exists", ignoreCase = true)) {
+                        uiState = uiState.copy(errorMessage = "Incorrect password")
+                    } else {
+                        uiState = uiState.copy(errorMessage = "Sign-up failed: $msg")
+                    }
                 }
             } finally {
                 uiState = uiState.copy(isLoading = false)
