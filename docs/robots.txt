@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://samarthkulkarni16.github.io/To-Do_App_for_you/sitemap.xml
